@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Interactive</title>
+    <style>
+        .clickable {
+            cursor: pointer;
+        }
+        .clickable:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="svgContainer"></div>
+
+    <script>
+        fetch('root.svg')
+            .then(response => response.text())
+            .then(svgContent => {
+                document.getElementById('svgContainer').innerHTML = svgContent;
+                initializeSVGInteractions();
+            })
+            .catch(error => {
+                console.error('Error al cargar SVG:', error);
+                document.getElementById('svgContainer').innerHTML = 
+                    `<p style="color: red">Error al cargar SVG: ${error.message}</p>`;
+            });
+        
+        function initializeSVGInteractions() {
+            const clickableAreas = {
+                'GO': 'Main',
+                'GO2': 'Group A',
+                '1': 'Group 1',
+                '2': 'Group 2',
+                '3': 'Group 3',
+                '4': 'Group 4'
+            };
+
+            // First set all target groups to hidden initially
+            for (const target of Object.values(clickableAreas)) {
+                const group = document.getElementById(target);
+                if (group) {
+                    setGroupVisibility(group, 'hidden');
+                }
+            }
+
+            // Then set up click listeners
+            for (const [key, target] of Object.entries(clickableAreas)) {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.classList.add('clickable');
+                    element.addEventListener('click', () => {
+                        console.log(`Clicked: ${key}, targeting: ${target}`);
+                        toggleGroupVisibility(target);
+                    });
+                } else {
+                    console.warn(`Element ${key} not found`);
+                }
+            }
+        }
+
+        function setGroupVisibility(group, visibility) {
+            group.setAttribute('visibility', visibility);
+            const childElements = group.getElementsByTagName('*');
+            for (const child of childElements) {
+                child.setAttribute('visibility', visibility);
+            }
+        }
+
+        function toggleGroupVisibility(groupId) {
+            const group = document.getElementById(groupId);
+            if (group) {
+                const currentVisibility = group.getAttribute('visibility') || 'visible';
+                const newVisibility = currentVisibility === 'hidden' ? 'visible' : 'hidden';
+                setGroupVisibility(group, newVisibility);
+                console.log(`Changed visibility of ${groupId} and children to ${newVisibility}`);
+            }
+        }
+    </script>
+</body>
+</html>
