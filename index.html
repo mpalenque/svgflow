@@ -13,7 +13,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f0f0f0;
+            background: #f0f0f0; /* Debug background */
         }
         #svgContainer {
             display: flex;
@@ -23,43 +23,40 @@
             height: 100%;
             overflow: hidden;
             touch-action: none;
-            border: 2px solid blue;
+            border: 2px solid blue; /* Debug border */
         }
         .clickable { cursor: pointer; }
         .clickable:hover { opacity: 0.8; }
-        #svgContent {
+        #svgObject {
             max-width: 90%;
             max-height: 90%;
-            border: 2px solid red;
+            object-fit: contain;
+            border: 2px solid red; /* Debug border */
         }
+
+
+
+
+
+        
     </style>
 </head>
 <body>
     <div id="svgContainer">
-        <div id="svgContent"></div>
+        <object id="svgObject" type="image/svg+xml" data="root2.svg" width="100%" height="100%">
+            Your browser does not support SVG
+        </object>
     </div>
 
     <script>
         let currentZoom = 1;
-        const minZoom = 0.5;
-        const maxZoom = 3;
+        const minZoom = 0.5;  // 50%
+        const maxZoom = 3;    // 300%
         const zoomStep = 0.1;
 
         document.addEventListener('DOMContentLoaded', function() {
-            const svgContent = document.getElementById('svgContent');
+            const svgObject = document.getElementById('svgObject');
             
-            fetch('https://mpalenque.github.io/svgflow/root2.svg')
-                .then(response => response.text())
-                .then(svgData => {
-                    svgContent.innerHTML = svgData;
-                    // Wait for SVG to be loaded
-                    setTimeout(() => {
-                        setupInitialVisibility();
-                        setupButtonListeners();
-                    }, 100);
-                })
-                .catch(error => console.error('Error loading SVG:', error));
-
             window.addEventListener('wheel', function(e) {
                 if (e.ctrlKey) {
                     e.preventDefault();
@@ -68,26 +65,32 @@
                     
                     if (newZoom !== currentZoom) {
                         currentZoom = newZoom;
-                        svgContent.style.transform = `scale(${currentZoom})`;
+                        svgObject.style.transform = `translate(-50%, -50%) scale(${currentZoom})`;
                     }
                 }
             }, { passive: false });
+            
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                setupInitialVisibility(svgDoc);
+                setupButtonListeners(svgDoc);
+            });
         });
 
-        function setupInitialVisibility() {
-            const groups = document.querySelectorAll('[id^="Group_"]');
+        function setupInitialVisibility(svgDoc) {
+            const groups = Array.from(svgDoc.querySelectorAll('[id^="Group_"]'));
             groups.forEach(group => {
                 setGroupVisibility(group, 'hidden');
             });
         }
 
-        function setupButtonListeners() {
-            const buttons = document.querySelectorAll('[id^="Button_"]');
+        function setupButtonListeners(svgDoc) {
+            const buttons = Array.from(svgDoc.querySelectorAll('[id^="Button_"]'));
             
             buttons.forEach(button => {
                 const buttonId = button.id;
                 const groupId = 'Group_' + buttonId.split('Button_')[1];
-                const group = document.getElementById(groupId);
+                const group = svgDoc.getElementById(groupId);
 
                 button.style.cursor = 'pointer';
                 button.addEventListener('click', function(e) {
@@ -120,5 +123,8 @@
             console.log(`Visibility changed to ${newVisibility} for group ${group.id}`);
         }
     </script>
+
+
+
 </body>
 </html>
