@@ -5,79 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG Interactive</title>
     <style>
-        .clickable {
-            cursor: pointer;
+        body {
+            margin: 0;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
         }
-        .clickable:hover {
-            opacity: 0.8;
+        #svgContainer {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            position: relative;
+        }
+        .clickable { cursor: pointer; }
+        .clickable:hover { opacity: 0.8; }
+        #svgObject {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out;
         }
     </style>
 </head>
 <body>
-    <div id="svgContainer"></div>
+    <div id="svgContainer">
+        <object id="svgObject" type="image/svg+xml" data="root.svg" width="100%" height="100%">
+            Your browser does not support SVG
+        </object>
+    </div>
 
     <script>
-        fetch('root.svg')
-            .then(response => response.text())
-            .then(svgContent => {
-                document.getElementById('svgContainer').innerHTML = svgContent;
-                initializeSVGInteractions();
-            })
-            .catch(error => {
-                console.error('Error al cargar SVG:', error);
-                document.getElementById('svgContainer').innerHTML = 
-                    `<p style="color: red">Error al cargar SVG: ${error.message}</p>`;
+        let currentZoom = 1;
+        const minZoom = 0.5;  // 50%
+        const maxZoom = 3;    // 300%
+        const zoomStep = 0.1;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const svgObject = document.getElementById('svgObject');
+            const svgContainer = document.getElementById('svgContainer');
+
+            // Zoom handling with mouse wheel
+            svgContainer.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -1 : 1;
+                let newZoom = currentZoom + (delta * zoomStep);
+                newZoom = Math.min(Math.max(newZoom, minZoom), maxZoom);
+                
+                if (newZoom !== currentZoom) {
+                    currentZoom = newZoom;
+                    svgObject.style.transform = `translate(-50%, -50%) scale(${currentZoom})`;
+                }
+            }, { passive: false });
+            
+            // SVG load and interaction setup
+            svgObject.addEventListener('load', function() {
+                const svgDoc = svgObject.contentDocument;
+                setupInitialVisibility(svgDoc);
+                setupButtonListeners(svgDoc);
             });
-        
-        function initializeSVGInteractions() {
-            const clickableAreas = {
-                'GO': 'Main',
-                'GO2': 'Group A',
-                '1': 'Group 1',
-                '2': 'Group 2',
-                '3': 'Group 3',
-                '4': 'Group 4'
-            };
+        });
 
-            // First set all target groups to hidden initially
-            for (const target of Object.values(clickableAreas)) {
-                const group = document.getElementById(target);
-                if (group) {
-                    setGroupVisibility(group, 'hidden');
-                }
-            }
+        function setupInitialVisibility(svgDoc) {
+            const groups = Array.from(svgDoc.querySelectorAll('[id^="Group_"]'));
+            groups.forEach(group => {
+                setGroupVisibility(group, 'hidden');
+            });
+        }
 
-            // Then set up click listeners
-            for (const [key, target] of Object.entries(clickableAreas)) {
-                const element = document.getElementById(key);
-                if (element) {
-                    element.classList.add('clickable');
-                    element.addEventListener('click', () => {
-                        console.log(`Clicked: ${key}, targeting: ${target}`);
-                        toggleGroupVisibility(target);
-                    });
-                } else {
-                    console.warn(`Element ${key} not found`);
-                }
-            }
+        function setupButtonListeners(svgDoc) {
+            const buttons = Array.from(svgDoc.querySelectorAll('[id^="Button_"]'));
+            
+            buttons.forEach(button => {
+                const buttonId = button.id;
+                const groupId = 'Group_' + buttonId.split('Button_')[1];
+                const group = svgDoc.getElementById(groupId);
+
+                button.style.cursor = 'pointer';
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (group) {
+                        console.log(`Toggling ${groupId} from button ${buttonId}`);
+                        toggleGroupVisibility(group);
+                    } else {
+                        console.warn(`Group ${groupId} not found for button ${buttonId}`);
+                    }
+                });
+            });
         }
 
         function setGroupVisibility(group, visibility) {
+            if (!group) return;
             group.setAttribute('visibility', visibility);
-            const childElements = group.getElementsByTagName('*');
-            for (const child of childElements) {
-                child.setAttribute('visibility', visibility);
-            }
+            Array.from(group.children).forEach(child => {
+                if (!child.id || !child.id.startsWith('Group_')) {
+                    child.setAttribute('visibility', visibility);
+                }
+            });
         }
 
-        function toggleGroupVisibility(groupId) {
-            const group = document.getElementById(groupId);
-            if (group) {
-                const currentVisibility = group.getAttribute('visibility') || 'visible';
-                const newVisibility = currentVisibility === 'hidden' ? 'visible' : 'hidden';
-                setGroupVisibility(group, newVisibility);
-                console.log(`Changed visibility of ${groupId} and children to ${newVisibility}`);
-            }
+        function toggleGroupVisibility(group) {
+            if (!group) return;
+            const currentVisibility = group.getAttribute('visibility');
+            const newVisibility = (currentVisibility === 'hidden') ? 'visible' : 'hidden';
+            setGroupVisibility(group, newVisibility);
+            console.log(`Visibility changed to ${newVisibility} for group ${group.id}`);
         }
     </script>
 </body>
