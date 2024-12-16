@@ -13,7 +13,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f0f0f0; /* Debug background */
+            background: #000000;
         }
         #svgContainer {
             display: flex;
@@ -23,22 +23,20 @@
             height: 100%;
             overflow: hidden;
             touch-action: none;
-            border: 2px solid blue; /* Debug border */
+            border: 2px solid blue;
+            position: relative;
         }
         .clickable { cursor: pointer; }
         .clickable:hover { opacity: 0.8; }
         #svgObject {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 360%;  /* 90% * 4 */
+            max-height: 360%; /* 90% * 4 */
             object-fit: contain;
-            border: 2px solid red; /* Debug border */
+            border: 2px solid red;
+            transform: scale(4) translateY(40%);;
+            background: #f0f0f0;
+            transform-origin: center center;
         }
-
-
-
-
-
-        
     </style>
 </head>
 <body>
